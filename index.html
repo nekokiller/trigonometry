@@ -75,28 +75,26 @@
   }
 
   .home-title {
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 900;
     color: #ffffff;
     letter-spacing: 3px;
-    /* 用 text-stroke 做真正的描邊；paint-order 讓描邊在外側不會切掉字體 */
     -webkit-text-stroke: 3px #1a3a52;
     paint-order: stroke fill;
-    /* 保留下方陰影製造立體感 */
     text-shadow: 0 4px 8px rgba(0,0,0,0.3);
     text-align: center;
-    line-height: 1.25;
-    margin: 8px 0 20px;
+    line-height: 1.2;
+    margin: 4px 0 12px;
   }
 
   .home-section {
     width: 100%;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .home-section h2 {
-    font-size: 14px;
+    font-size: 13px;
     color: #fff;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
     text-shadow: 0 1px 2px rgba(0,0,0,0.4);
     letter-spacing: 1px;
     font-weight: 700;
@@ -114,7 +112,7 @@
   }
 
   .opt-btn {
-    padding: 12px 8px;
+    padding: 10px 8px;
     border: 3px solid #1a1a1a;
     border-radius: 14px;
     font-size: 15px;
@@ -142,10 +140,10 @@
   }
 
   .start-btn {
-    margin-top: 18px;
+    margin-top: 12px;
     width: 80%;
     max-width: 280px;
-    padding: 14px 12px;
+    padding: 12px 12px;
     border: 3px solid #1a1a1a;
     border-radius: 18px;
     font-size: 19px;
@@ -464,10 +462,10 @@
 
   /* ===== 錯題本 ===== */
   .wrongbook-btn {
-    margin-top: 10px;
+    margin-top: 8px;
     width: 80%;
     max-width: 280px;
-    padding: 11px 12px;
+    padding: 10px 12px;
     border: 3px solid #1a1a1a;
     border-radius: 16px;
     font-size: 15px;
@@ -533,14 +531,23 @@
   }
 
   /* 小型裝置 */
-  @media (max-height: 700px) {
-    .home-title { font-size: 26px; margin: 4px 0 14px; }
-    .home-section { margin-bottom: 10px; }
-    .opt-btn { padding: 10px 8px; font-size: 14px; }
-    .start-btn { padding: 12px 12px; font-size: 17px; }
+  @media (max-height: 800px) {
+    .home-title { font-size: 24px; margin: 2px 0 10px; }
+    .home-section { margin-bottom: 8px; }
+    .home-section h2 { font-size: 12px; margin-bottom: 4px; }
+    .opt-btn { padding: 9px 6px; font-size: 14px; }
+    .start-btn { padding: 10px 12px; font-size: 17px; margin-top: 10px; }
+    .wrongbook-btn { padding: 8px 12px; font-size: 13px; margin-top: 6px; }
     .question-text { font-size: 32px; }
     .answer-btn { font-size: 19px; }
     .frac { font-size: 16px; }
+  }
+  @media (max-height: 680px) {
+    .home-title { font-size: 22px; margin: 0 0 8px; letter-spacing: 2px; }
+    .home-section { margin-bottom: 6px; }
+    .opt-btn { padding: 7px 6px; font-size: 13px; }
+    .start-btn { padding: 9px 10px; font-size: 16px; margin-top: 8px; }
+    .wrongbook-btn { padding: 7px 10px; font-size: 12px; margin-top: 5px; }
   }
 </style>
 </head>

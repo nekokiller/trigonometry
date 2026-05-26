@@ -462,6 +462,76 @@
   .btn-confirm { background: linear-gradient(180deg, #ff6b6b 0%, #c93535 100%); }
   .btn-cancel { background: linear-gradient(180deg, #aaa 0%, #666 100%); }
 
+  /* ===== 錯題本 ===== */
+  .wrongbook-btn {
+    margin-top: 10px;
+    width: 80%;
+    max-width: 280px;
+    padding: 11px 12px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #b85cb8 0%, #7a2e7a 100%);
+    box-shadow: 0 3px 0 #1a1a1a;
+    letter-spacing: 1px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .wrongbook-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .wrongbook-btn[disabled] {
+    background: linear-gradient(180deg, #c8c8c8 0%, #8a8a8a 100%);
+    color: #f0f0f0;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: 0 3px 0 #555;
+  }
+  .wrongbook-btn .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: #fff;
+    color: #7a2e7a;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .stat-value.wrong-prev { color: #c93535; font-size: 16px; }
+  .stat-value.correct-ans { color: #2e8b2e; font-size: 16px; }
+
+  /* 錯題本完成總結 */
+  .wb-empty {
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #1a1a1a;
+    border-radius: 22px;
+    padding: 36px 24px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+  }
+  .wb-empty h2 {
+    font-size: 26px;
+    color: #1a3a52;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .wb-empty p {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+
   /* 小型裝置 */
   @media (max-height: 700px) {
     .home-title { font-size: 26px; margin: 4px 0 14px; }
@@ -510,6 +580,7 @@
     </div>
 
     <button class="start-btn" id="btn-start" disabled>開始</button>
+    <button class="wrongbook-btn" id="btn-wrongbook">📚 錯題本 <span class="badge" id="wb-badge">0</span></button>
 
     <div class="version-info">v2.0.20260526</div>
   </div>
@@ -570,7 +641,47 @@
     </div>
   </div>
 
-  <!-- 確認對話框 -->
+  <!-- ===== 錯題本 ===== -->
+  <div id="view-wrongbook" class="view">
+    <div class="quiz-stats">
+      <div class="stat-item">
+        <span class="stat-label">錯題</span>
+        <span class="stat-value" id="wb-progress">0 / 0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">上次答案</span>
+        <span class="stat-value wrong-prev" id="wb-prev">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">正解</span>
+        <span class="stat-value correct-ans" id="wb-correct">—</span>
+      </div>
+    </div>
+
+    <div class="question-area">
+      <div class="question-text" id="wb-question">—</div>
+    </div>
+
+    <div class="answers-grid" id="wb-answers"></div>
+
+    <div class="quiz-footer">
+      <button class="back-btn" id="wb-back">返回首頁</button>
+    </div>
+  </div>
+
+  <!-- ===== 錯題本完成 ===== -->
+  <div id="view-wb-done" class="view">
+    <div class="wb-empty">
+      <h2 id="wb-done-title">太棒了！</h2>
+      <p id="wb-done-msg">—</p>
+      <div class="summary-buttons" style="margin-top: 24px;">
+        <button class="btn-retry" id="wb-done-retry">再練剩下的</button>
+        <button class="btn-home" id="wb-done-home">回首頁</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- 確認對話框 -->
   <div class="modal-overlay" id="modal-confirm">
     <div class="modal-box">
       <p class="modal-text">確定要停止比賽並返回首頁嗎？<br>目前進度將不會保存。</p>
@@ -594,6 +705,15 @@ if ('serviceWorker' in navigator) {
 /* =====================================================
  * 三角函數計時比賽 v2 (含計時模式開關 + PWA)
  * ===================================================== */
+
+/* ---------- 音效預載 ---------- */
+const sndCorrect = new Audio('./audio/correct.mp3');
+const sndWrong = new Audio('./audio/wrong.mp3');
+sndCorrect.volume = 0.7;
+sndWrong.volume = 0.7;
+function playSound(audio) {
+  try { audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
+}
 
 const ANS = {
   ZERO:          { key: 'ZERO',          html: '0' },
@@ -896,13 +1016,18 @@ function onAnswer(key, btn) {
 
   const q = state.questions[state.index];
   const isCorrect = (key === q.answerKey);
+  const qKey = makeQKey(q.funcName, q.angleDeg, q.unit);
   if (isCorrect) {
     state.correct++;
     btn.classList.add('correct-flash');
+    playSound(sndCorrect);
+    removeWrong(qKey);  // 答對就從錯題本移除
   } else {
     btn.classList.add('wrong-flash');
     const correctBtn = document.querySelector(`.answer-btn[data-key="${q.answerKey}"]`);
     if (correctBtn) correctBtn.classList.add('correct-flash');
+    playSound(sndWrong);
+    addWrong(qKey, q, key);  // 答錯就加入錯題本
   }
 
   setTimeout(() => {
@@ -932,6 +1057,165 @@ function saveHistory(record) {
   } catch (e) {
     console.warn('儲存歷史記錄失敗', e);
   }
+}
+
+/* ---------- 錯題本 (Wrong Book) ---------- */
+const WRONG_KEY = 'trig_quiz_wrong_v2';
+function makeQKey(funcName, angleDeg, unit) {
+  return funcName + '_' + angleDeg + '_' + unit;
+}
+function loadWrongBook() {
+  try {
+    const raw = localStorage.getItem(WRONG_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveWrongBook(book) {
+  try { localStorage.setItem(WRONG_KEY, JSON.stringify(book)); } catch (e) {}
+}
+function addWrong(qKey, q, userKey) {
+  const book = loadWrongBook();
+  const existing = book[qKey];
+  book[qKey] = {
+    funcName: q.funcName,
+    funcDisplay: q.funcDisplay,
+    angleDeg: q.angleDeg,
+    angleRad: q.angleRad,
+    unit: q.unit,
+    correctKey: q.answerKey,
+    lastWrongKey: userKey,
+    wrongCount: existing ? existing.wrongCount + 1 : 1,
+    lastWrongAt: Date.now()
+  };
+  saveWrongBook(book);
+}
+function removeWrong(qKey) {
+  const book = loadWrongBook();
+  if (book[qKey]) {
+    delete book[qKey];
+    saveWrongBook(book);
+  }
+}
+function getWrongCount() {
+  return Object.keys(loadWrongBook()).length;
+}
+function refreshWrongBookBadge() {
+  const n = getWrongCount();
+  document.getElementById('wb-badge').textContent = n;
+  const btn = document.getElementById('btn-wrongbook');
+  btn.disabled = (n === 0);
+}
+
+/* ---------- 錯題本狀態 ---------- */
+const wbState = {
+  list: [],       // 本次練習的錯題陣列 (從 localStorage 載入時複製)
+  index: 0,
+  locked: false,
+  conquered: 0    // 本次答對(征服)題數
+};
+
+function startWrongReview() {
+  const book = loadWrongBook();
+  const list = Object.entries(book).map(([qKey, q]) => Object.assign({ qKey }, q));
+  if (list.length === 0) return;
+  wbState.list = list;
+  wbState.index = 0;
+  wbState.locked = false;
+  wbState.conquered = 0;
+  renderWrongCard();
+  showView('view-wrongbook');
+}
+
+function renderWrongCard() {
+  const item = wbState.list[wbState.index];
+  if (!item) return;
+  // 統計欄
+  document.getElementById('wb-progress').textContent =
+    (wbState.index + 1) + ' / ' + wbState.list.length;
+  document.getElementById('wb-prev').innerHTML = ANS[item.lastWrongKey].html;
+  document.getElementById('wb-correct').innerHTML = ANS[item.correctKey].html;
+  // 題目
+  const angleHtml = (item.unit === 'rad') ? renderRadHtml(item.angleRad) : (item.angleDeg + '°');
+  document.getElementById('wb-question').innerHTML =
+    '<span class="func">' + item.funcDisplay + '</span> <span class="angle">' + angleHtml +
+    '</span><span class="equals">=</span><span class="qmark">?</span>';
+  // 答案網格 (固定用 mix layout 14 個)
+  renderWBAnswers();
+}
+
+function renderWBAnswers() {
+  const grid = document.getElementById('wb-answers');
+  grid.innerHTML = '';
+  const layout = QUAD_LAYOUTS.mix;
+  grid.style.gridTemplateColumns = 'repeat(' + layout.cols + ', 1fr)';
+  grid.style.gridTemplateRows = 'repeat(' + Math.ceil(layout.items.length / layout.cols) + ', 1fr)';
+  layout.items.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    if (key === null) {
+      btn.classList.add('placeholder');
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = ANS[key].html;
+      btn.dataset.key = key;
+      if (key === 'UNDEFINED') btn.classList.add('text-small');
+      btn.addEventListener('click', () => onWrongAnswer(key, btn));
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function onWrongAnswer(key, btn) {
+  if (wbState.locked) return;
+  wbState.locked = true;
+  const item = wbState.list[wbState.index];
+  const isCorrect = (key === item.correctKey);
+  if (isCorrect) {
+    btn.classList.add('correct-flash');
+    playSound(sndCorrect);
+    removeWrong(item.qKey);
+    wbState.conquered++;
+  } else {
+    btn.classList.add('wrong-flash');
+    const cb = document.querySelector('.answer-btn[data-key="' + item.correctKey + '"]');
+    if (cb) cb.classList.add('correct-flash');
+    playSound(sndWrong);
+    // 留在錯題本並更新 wrongCount + lastWrongKey
+    addWrong(item.qKey, {
+      funcName: item.funcName,
+      funcDisplay: item.funcDisplay,
+      angleDeg: item.angleDeg,
+      angleRad: item.angleRad,
+      unit: item.unit,
+      answerKey: item.correctKey
+    }, key);
+  }
+  setTimeout(() => {
+    document.querySelectorAll('#wb-answers .answer-btn').forEach(b => {
+      b.classList.remove('correct-flash', 'wrong-flash');
+    });
+    wbState.index++;
+    if (wbState.index >= wbState.list.length) {
+      finishWrongReview();
+    } else {
+      renderWrongCard();
+      wbState.locked = false;
+    }
+  }, 280);
+}
+
+function finishWrongReview() {
+  const remain = getWrongCount();
+  const total = wbState.list.length;
+  document.getElementById('wb-done-title').textContent =
+    wbState.conquered === total ? '🎉 全部征服！' : (remain === 0 ? '🎉 太棒了！' : '繼續加油！');
+  let msg = '本次練習 ' + total + ' 題，答對 ' + wbState.conquered + ' 題';
+  if (remain > 0) msg += '，錯題本還剩 ' + remain + ' 題';
+  else msg += '，錯題本已清空 ✨';
+  document.getElementById('wb-done-msg').textContent = msg;
+  document.getElementById('wb-done-retry').style.display = remain > 0 ? '' : 'none';
+  refreshWrongBookBadge();
+  showView('view-wb-done');
 }
 
 /* ---------- 事件綁定 ---------- */
@@ -971,80 +1255,23 @@ document.getElementById('btn-summary-home').addEventListener('click', () => {
   showView('view-home');
 });
 
-showView('view-home');
-</script>
-</body>
-</html>
-=> {
-  btn.addEventListener('click', () => selectTimer(btn.dataset.timer, btn));
-});
-// 計時模式預設選「關」
-const defaultTimerBtn = document.querySelector('.timer-btn[data-timer="off"]');
-if (defaultTimerBtn) defaultTimerBtn.classList.add('selected');
-
-document.getElementById('btn-start').addEventListener('click', () => {
-  if (!homeState.unit || !homeState.quad) return;
-  startQuiz(homeState.unit, homeState.quad, homeState.timer);
-});
-
-document.getElementById('btn-back').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.add('active');
-});
-document.getElementById('modal-yes').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.remove('active');
-  abortQuiz();
-});
-document.getElementById('modal-no').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.remove('active');
-});
-
-document.getElementById('btn-retry').addEventListener('click', () => {
-  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
-});
-document.getElementById('btn-summary-home').addEventListener('click', () => {
+// 錯題本按鈕事件
+document.getElementById('btn-wrongbook').addEventListener('click', startWrongReview);
+document.getElementById('wb-back').addEventListener('click', () => {
+  refreshWrongBookBadge();
   showView('view-home');
 });
+document.getElementById('wb-done-retry').addEventListener('click', startWrongReview);
+document.getElementById('wb-done-home').addEventListener('click', () => showView('view-home'));
 
-showView('view-home');
-</script>
-</body>
-</html>
-(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
-});
-document.getElementById('btn-summary-home').addEventListener('click', () => {
-  showView('view-home');
-});
+// 每次回首頁時更新 badge
+const _origShowView = showView;
+showView = function(id) {
+  _origShowView(id);
+  if (id === 'view-home') refreshWrongBookBadge();
+};
 
-showView('view-home');
-</script>
-</body>
-</html>
-ick', () => {
-  showView('view-home');
-});
-
-showView('view-home');
-</script>
-</body>
-</html>
-'btn-back').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.add('active');
-});
-document.getElementById('modal-yes').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.remove('active');
-  abortQuiz();
-});
-document.getElementById('modal-no').addEventListener('click', () => {
-  document.getElementById('modal-confirm').classList.remove('active');
-});
-
-document.getElementById('btn-retry').addEventListener('click', () => {
-  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
-});
-document.getElementById('btn-summary-home').addEventListener('click', () => {
-  showView('view-home');
-});
-
+refreshWrongBookBadge();
 showView('view-home');
 </script>
 </body>

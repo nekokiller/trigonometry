@@ -3,13 +3,15 @@
  * Cache-First 策略，所有資源啟動時預先快取，網路失效時離線可用
  */
 
-const CACHE_VERSION = 'trig-quiz-v2-20260526';
+const CACHE_VERSION = 'trig-quiz-v2-20260526-wrongbook';
 const CACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './audio/correct.mp3',
+  './audio/wrong.mp3'
 ];
 
 // 安裝：開啟 cache 並預先快取所有資源

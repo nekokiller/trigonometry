@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>三角函數計時比賽 v2</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, -apple-system, sans-serif;
+    background: #1a1a1a;
+    color: #1a1a1a;
+    overflow: hidden;
+  }
+
+  .app {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+    background: linear-gradient(160deg, #b8dff0 0%, #7fb9d8 50%, #5b9bc0 100%);
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+  .app::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.10) 0%, transparent 35%),
+      radial-gradient(circle at 50% 90%, rgba(255,255,255,0.08) 0%, transparent 30%);
+    pointer-events: none;
+  }
+
+  .view {
+    display: none;
+    position: absolute;
+    inset: 0;
+    padding: 18px 18px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    padding-top: max(18px, env(safe-area-inset-top, 18px));
+    flex-direction: column;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .view.active {
+    display: flex;
+  }
+
+  /* ===== 首頁 ===== */
+  #view-home {
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .home-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 3px;
+    /* 用 text-stroke 做真正的描邊；paint-order 讓描邊在外側不會切掉字體 */
+    -webkit-text-stroke: 3px #1a3a52;
+    paint-order: stroke fill;
+    /* 保留下方陰影製造立體感 */
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    text-align: center;
+    line-height: 1.25;
+    margin: 8px 0 20px;
+  }
+
+  .home-section {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .home-section h2 {
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  .unit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quad-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .opt-btn {
+    padding: 12px 8px;
+    border: 3px solid #1a1a1a;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a3a52;
+    background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    letter-spacing: 1px;
+  }
+  .opt-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .opt-btn.selected {
+    color: #fff;
+    background: linear-gradient(180deg, #f08c40 0%, #c96819 100%);
+  }
+  .opt-btn.unit-btn.selected {
+    background: linear-gradient(180deg, #3aa8cb 0%, #1d7da0 100%);
+  }
+  .opt-btn.timer-btn.selected {
+    background: linear-gradient(180deg, #66c266 0%, #2e8b2e 100%);
+  }
+
+  .start-btn {
+    margin-top: 18px;
+    width: 80%;
+    max-width: 280px;
+    padding: 14px 12px;
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    font-size: 19px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #66c266 0%, #2e8b2e 100%);
+    box-shadow: 0 4px 0 #1a1a1a;
+    letter-spacing: 2px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s;
+  }
+  .start-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .start-btn[disabled] {
+    background: linear-gradient(180deg, #c8c8c8 0%, #8a8a8a 100%);
+    color: #f0f0f0;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: 0 3px 0 #555;
+  }
+  .start-btn[disabled]:active {
+    transform: none;
+    box-shadow: 0 3px 0 #555;
+  }
+
+  /* 版本資訊（首頁底部） */
+  .version-info {
+    position: absolute;
+    bottom: max(6px, env(safe-area-inset-bottom, 6px));
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ===== 計時答題頁面 ===== */
+  #view-quiz {
+    padding: 14px 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    padding-top: max(14px, env(safe-area-inset-top, 14px));
+    gap: 10px;
+  }
+
+  .quiz-stats {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255,255,255,0.85);
+    border: 2px solid #1a1a1a;
+    border-radius: 14px;
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a3a52;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #555;
+    font-weight: 600;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 900;
+    color: #1a3a52;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.timer {
+    color: #c93535;
+  }
+
+  .question-area {
+    flex: 0 0 auto;
+    background: rgba(255,255,255,0.92);
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: 0 4px 0 #1a1a1a;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .question-text {
+    font-size: 38px;
+    font-weight: 900;
+    color: #1a3a52;
+    letter-spacing: 2px;
+    line-height: 1.2;
+    /* 用 flex 讓 sin / 分數 / = / ? 全部垂直置中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .question-text .func { color: #c93535; }
+  .question-text .angle { color: #1a3a52; display: inline-flex; align-items: center; }
+  .question-text .equals { color: #1a3a52; }
+  .question-text .qmark { color: #1d7da0; }
+
+  .answers-grid {
+    flex: 1 1 auto;
+    display: grid;
+    gap: 8px;
+    padding: 4px 0;
+    min-height: 0;
+  }
+  .answer-btn {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 3px solid #1a1a1a;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffd96b 0%, #f5b427 100%);
+    color: #1a1a1a;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 #1a1a1a;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s;
+    padding: 4px;
+  }
+  .answer-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .answer-btn.correct-flash {
+    background: linear-gradient(180deg, #88e088 0%, #44a444 100%);
+    color: #fff;
+  }
+  .answer-btn.wrong-flash {
+    background: linear-gradient(180deg, #ff7070 0%, #c93535 100%);
+    color: #fff;
+  }
+  .answer-btn.text-small {
+    font-size: 15px;
+  }
+  .answer-btn.placeholder {
+    visibility: hidden;
+  }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    font-size: 18px;
+    vertical-align: middle;
+  }
+  .frac .num,
+  .frac .den {
+    padding: 0 4px;
+  }
+  .frac .num {
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 2px;
+  }
+  .frac .den {
+    padding-top: 2px;
+  }
+  .question-text .frac { font-size: 30px; }
+  .question-text .frac .num { border-bottom-width: 3px; }
+
+  .quiz-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 2px;
+  }
+  .back-btn {
+    padding: 10px 28px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ff6b6b 0%, #c93535 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .back-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+
+  /* ===== 總結 ===== */
+  #view-summary {
+    justify-content: center;
+    align-items: center;
+    padding: 30px 24px;
+  }
+  .summary-card {
+    width: 100%;
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #1a1a1a;
+    border-radius: 22px;
+    padding: 30px 24px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+  }
+  .summary-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #1a3a52;
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+  .summary-subtitle {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 22px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #f5f5f5;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+  }
+  .summary-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+  }
+  .summary-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: #1a3a52;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .summary-buttons button {
+    flex: 1;
+    padding: 14px 8px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .summary-buttons button:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .btn-retry { background: linear-gradient(180deg, #3aa8cb 0%, #1d7da0 100%); }
+  .btn-home { background: linear-gradient(180deg, #888 0%, #555 100%); }
+
+  /* 確認對話框 */
+  .modal-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: #fff;
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    padding: 24px 20px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+    width: 100%;
+    max-width: 320px;
+  }
+  .modal-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a3a52;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .modal-buttons { display: flex; gap: 10px; }
+  .modal-buttons button {
+    flex: 1;
+    padding: 10px 8px;
+    border: 2px solid #1a1a1a;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn-confirm { background: linear-gradient(180deg, #ff6b6b 0%, #c93535 100%); }
+  .btn-cancel { background: linear-gradient(180deg, #aaa 0%, #666 100%); }
+
+  /* 小型裝置 */
+  @media (max-height: 700px) {
+    .home-title { font-size: 26px; margin: 4px 0 14px; }
+    .home-section { margin-bottom: 10px; }
+    .opt-btn { padding: 10px 8px; font-size: 14px; }
+    .start-btn { padding: 12px 12px; font-size: 17px; }
+    .question-text { font-size: 32px; }
+    .answer-btn { font-size: 19px; }
+    .frac { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 首頁 ===== -->
+  <div id="view-home" class="view active">
+    <h1 class="home-title">三角函數<br>計時比賽</h1>
+
+    <div class="home-section">
+      <h2>單位</h2>
+      <div class="unit-grid">
+        <button class="opt-btn unit-btn" data-unit="deg">單位：度</button>
+        <button class="opt-btn unit-btn" data-unit="rad">單位：弧度</button>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <h2>象限</h2>
+      <div class="quad-grid">
+        <button class="opt-btn quad-btn" data-quad="q1">第一象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q2">第二象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q3">第三象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q4">第四象限角</button>
+        <button class="opt-btn quad-btn" data-quad="axis">象限角</button>
+        <button class="opt-btn quad-btn" data-quad="mix">混合</button>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <h2>計時模式</h2>
+      <div class="unit-grid">
+        <button class="opt-btn timer-btn" data-timer="off">計時：關</button>
+        <button class="opt-btn timer-btn" data-timer="on">計時：開</button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="btn-start" disabled>開始</button>
+
+    <div class="version-info">v2.0.20260526</div>
+  </div>
+
+  <!-- ===== 計時答題 ===== -->
+  <div id="view-quiz" class="view">
+    <div class="quiz-stats">
+      <div class="stat-item">
+        <span class="stat-label">問題數</span>
+        <span class="stat-value" id="stat-progress">0 / 0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">正確答案</span>
+        <span class="stat-value" id="stat-correct">0</span>
+      </div>
+      <div class="stat-item" id="stat-timer-wrap">
+        <span class="stat-label">經過時間</span>
+        <span class="stat-value timer" id="stat-timer">00:00.00</span>
+      </div>
+    </div>
+
+    <div class="question-area">
+      <div class="question-text" id="question-text">—</div>
+    </div>
+
+    <div class="answers-grid" id="answers-grid"></div>
+
+    <div class="quiz-footer">
+      <button class="back-btn" id="btn-back">返回首頁</button>
+    </div>
+  </div>
+
+  <!-- ===== 總結 ===== -->
+  <div id="view-summary" class="view">
+    <div class="summary-card">
+      <div class="summary-title">比賽完成！</div>
+      <div class="summary-subtitle" id="summary-mode">—</div>
+      <div class="summary-row">
+        <span class="summary-label">總題數</span>
+        <span class="summary-value" id="summary-total">0</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">答對數</span>
+        <span class="summary-value" id="summary-correct">0</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">答對率</span>
+        <span class="summary-value" id="summary-rate">0%</span>
+      </div>
+      <div class="summary-row" id="summary-time-row">
+        <span class="summary-label">總時間</span>
+        <span class="summary-value" id="summary-time">00:00.00</span>
+      </div>
+      <div class="summary-buttons">
+        <button class="btn-retry" id="btn-retry">再來一次</button>
+        <button class="btn-home" id="btn-summary-home">回首頁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認對話框 -->
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal-box">
+      <p class="modal-text">確定要停止比賽並返回首頁嗎？<br>目前進度將不會保存。</p>
+      <div class="modal-buttons">
+        <button class="btn-confirm" id="modal-yes">確定返回</button>
+        <button class="btn-cancel" id="modal-no">繼續比賽</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+ * 三角函數計時比賽 v2 (含計時模式開關)
+ * ===================================================== */
+
+const ANS = {
+  ZERO:          { key: 'ZERO',          html: '0' },
+  ONE:           { key: 'ONE',           html: '1' },
+  NEG_ONE:       { key: 'NEG_ONE',       html: '-1' },
+  HALF:          { key: 'HALF',          html: '<span class="frac"><span class="num">1</span><span class="den">2</span></span>' },
+  NEG_HALF:      { key: 'NEG_HALF',      html: '<span class="frac"><span class="num">-1</span><span class="den">2</span></span>' },
+  SQRT2_2:       { key: 'SQRT2_2',       html: '<span class="frac"><span class="num">√2</span><span class="den">2</span></span>' },
+  NEG_SQRT2_2:   { key: 'NEG_SQRT2_2',   html: '<span class="frac"><span class="num">-√2</span><span class="den">2</span></span>' },
+  SQRT3_2:       { key: 'SQRT3_2',       html: '<span class="frac"><span class="num">√3</span><span class="den">2</span></span>' },
+  NEG_SQRT3_2:   { key: 'NEG_SQRT3_2',   html: '<span class="frac"><span class="num">-√3</span><span class="den">2</span></span>' },
+  SQRT3:         { key: 'SQRT3',         html: '√3' },
+  NEG_SQRT3:     { key: 'NEG_SQRT3',     html: '-√3' },
+  ONE_SQRT3:     { key: 'ONE_SQRT3',     html: '<span class="frac"><span class="num">1</span><span class="den">√3</span></span>' },
+  NEG_ONE_SQRT3: { key: 'NEG_ONE_SQRT3', html: '<span class="frac"><span class="num">-1</span><span class="den">√3</span></span>' },
+  UNDEFINED:     { key: 'UNDEFINED',     html: '無意義' }
+};
+
+const ANGLE_TABLE = {
+  0:   { rad: '0',     sin: 'ZERO',        cos: 'ONE',         tan: 'ZERO' },
+  30:  { rad: 'π/6',   sin: 'HALF',        cos: 'SQRT3_2',     tan: 'ONE_SQRT3' },
+  45:  { rad: 'π/4',   sin: 'SQRT2_2',     cos: 'SQRT2_2',     tan: 'ONE' },
+  60:  { rad: 'π/3',   sin: 'SQRT3_2',     cos: 'HALF',        tan: 'SQRT3' },
+  90:  { rad: 'π/2',   sin: 'ONE',         cos: 'ZERO',        tan: 'UNDEFINED' },
+  120: { rad: '2π/3',  sin: 'SQRT3_2',     cos: 'NEG_HALF',    tan: 'NEG_SQRT3' },
+  135: { rad: '3π/4',  sin: 'SQRT2_2',     cos: 'NEG_SQRT2_2', tan: 'NEG_ONE' },
+  150: { rad: '5π/6',  sin: 'HALF',        cos: 'NEG_SQRT3_2', tan: 'NEG_ONE_SQRT3' },
+  180: { rad: 'π',     sin: 'ZERO',        cos: 'NEG_ONE',     tan: 'ZERO' },
+  210: { rad: '7π/6',  sin: 'NEG_HALF',    cos: 'NEG_SQRT3_2', tan: 'ONE_SQRT3' },
+  225: { rad: '5π/4',  sin: 'NEG_SQRT2_2', cos: 'NEG_SQRT2_2', tan: 'ONE' },
+  240: { rad: '4π/3',  sin: 'NEG_SQRT3_2', cos: 'NEG_HALF',    tan: 'SQRT3' },
+  270: { rad: '3π/2',  sin: 'NEG_ONE',     cos: 'ZERO',        tan: 'UNDEFINED' },
+  300: { rad: '5π/3',  sin: 'NEG_SQRT3_2', cos: 'HALF',        tan: 'NEG_SQRT3' },
+  315: { rad: '7π/4',  sin: 'NEG_SQRT2_2', cos: 'SQRT2_2',     tan: 'NEG_ONE' },
+  330: { rad: '11π/6', sin: 'NEG_HALF',    cos: 'SQRT3_2',     tan: 'NEG_ONE_SQRT3' },
+  360: { rad: '2π',    sin: 'ZERO',        cos: 'ONE',         tan: 'ZERO' }
+};
+
+const FUNCS = [
+  { name: 'sin', display: 'sin' },
+  { name: 'cos', display: 'cos' },
+  { name: 'tan', display: 'tan' }
+];
+
+const QUAD_LAYOUTS = {
+  q1: {
+    cols: 3,
+    items: [
+      'HALF',   'SQRT2_2', 'SQRT3_2',
+      'ONE_SQRT3', 'SQRT3', 'ONE'
+    ]
+  },
+  qOther: {
+    cols: 3,
+    items: [
+      'HALF',          'SQRT2_2',     'SQRT3_2',
+      'NEG_HALF',      'NEG_SQRT2_2', 'NEG_SQRT3_2',
+      'ONE_SQRT3',     'SQRT3',       'ONE',
+      'NEG_ONE_SQRT3', 'NEG_SQRT3',   'NEG_ONE',
+      null,            'ZERO',        null
+    ]
+  },
+  axis: {
+    cols: 2,
+    items: ['ZERO', 'ONE', 'NEG_ONE', 'UNDEFINED']
+  },
+  mix: {
+    cols: 4,
+    items: [
+      'ONE',     'NEG_ONE',     'SQRT3',     'NEG_SQRT3',
+      'SQRT3_2', 'NEG_SQRT3_2', 'SQRT2_2',   'NEG_SQRT2_2',
+      'HALF',    'NEG_HALF',    'ONE_SQRT3', 'NEG_ONE_SQRT3',
+      null,      'ZERO',        'UNDEFINED', null
+    ]
+  }
+};
+
+const QUADRANTS = {
+  q1:   { label: '第一象限角', angles: [30, 45, 60],           layout: QUAD_LAYOUTS.q1 },
+  q2:   { label: '第二象限角', angles: [120, 135, 150],        layout: QUAD_LAYOUTS.qOther },
+  q3:   { label: '第三象限角', angles: [210, 225, 240],        layout: QUAD_LAYOUTS.qOther },
+  q4:   { label: '第四象限角', angles: [300, 315, 330],        layout: QUAD_LAYOUTS.qOther },
+  axis: { label: '象限角',     angles: [0, 90, 180, 270],      layout: QUAD_LAYOUTS.axis },
+  mix:  { label: '混合',
+          angles: [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330, 360],
+          layout: QUAD_LAYOUTS.mix }
+};
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuestions(unit, quad) {
+  const config = QUADRANTS[quad];
+  const list = [];
+  for (const deg of config.angles) {
+    const ad = ANGLE_TABLE[deg];
+    for (const f of FUNCS) {
+      list.push({
+        funcName: f.name,
+        funcDisplay: f.display,
+        angleDeg: deg,
+        angleRad: ad.rad,
+        unit: unit,
+        answerKey: ad[f.name]
+      });
+    }
+  }
+  return shuffle(list);
+}
+
+function renderRadHtml(rad) {
+  if (rad === '0') return '0';
+  if (rad.indexOf('/') === -1) return rad;
+  const [num, den] = rad.split('/');
+  return `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+}
+
+function formatTime(ms) {
+  const totalCs = Math.floor(ms / 10);
+  const cs = totalCs % 100;
+  const totalSec = Math.floor(totalCs / 100);
+  const sec = totalSec % 60;
+  const min = Math.floor(totalSec / 60);
+  return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------- 首頁狀態 ---------- */
+const homeState = { unit: null, quad: null, timer: 'off' };
+
+function refreshStartButton() {
+  const btn = document.getElementById('btn-start');
+  btn.disabled = !(homeState.unit && homeState.quad);
+}
+
+function selectUnit(unit, btn) {
+  homeState.unit = unit;
+  document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  refreshStartButton();
+}
+function selectQuad(quad, btn) {
+  homeState.quad = quad;
+  document.querySelectorAll('.quad-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  refreshStartButton();
+}
+function selectTimer(timer, btn) {
+  homeState.timer = timer;
+  document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+/* ---------- 遊戲狀態 ---------- */
+const state = {
+  unit: null,
+  quad: null,
+  timerEnabled: false,
+  questions: [],
+  index: 0,
+  correct: 0,
+  startMs: 0,
+  timerId: null,
+  locked: false
+};
+
+function startQuiz(unit, quad, timer) {
+  state.unit = unit;
+  state.quad = quad;
+  state.timerEnabled = (timer === 'on');
+  state.questions = buildQuestions(unit, quad);
+  state.index = 0;
+  state.correct = 0;
+  state.locked = false;
+  state.startMs = 0;
+
+  renderAnswersGrid(QUADRANTS[quad].layout);
+  renderQuestion();
+  updateStats();
+  showView('view-quiz');
+
+  // 依計時模式顯示/隱藏「經過時間」欄
+  document.getElementById('stat-timer-wrap').style.display =
+    state.timerEnabled ? '' : 'none';
+
+  if (state.timerId) {
+    clearInterval(state.timerId);
+    state.timerId = null;
+  }
+  if (state.timerEnabled) {
+    state.startMs = performance.now();
+    document.getElementById('stat-timer').textContent = '00:00.00';
+    state.timerId = setInterval(() => {
+      document.getElementById('stat-timer').textContent =
+        formatTime(performance.now() - state.startMs);
+    }, 30);
+  }
+}
+
+function abortQuiz() {
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = null;
+  showView('view-home');
+}
+
+function finishQuiz() {
+  const elapsed = state.timerEnabled ? (performance.now() - state.startMs) : 0;
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = null;
+
+  const cfg = QUADRANTS[state.quad];
+  const total = state.questions.length;
+  const rate = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+  const unitLabel = state.unit === 'deg' ? '度' : '弧度';
+  const timerLabel = state.timerEnabled ? '計時' : '不計時';
+
+  document.getElementById('summary-mode').textContent =
+    '單位：' + unitLabel + ' ・ ' + cfg.label + ' ・ ' + timerLabel + ' ・ 全 ' + total + ' 題';
+  document.getElementById('summary-total').textContent = total;
+  document.getElementById('summary-correct').textContent = state.correct;
+  document.getElementById('summary-rate').textContent = rate + '%';
+
+  const timeRow = document.getElementById('summary-time-row');
+  if (state.timerEnabled) {
+    timeRow.style.display = '';
+    document.getElementById('summary-time').textContent = formatTime(elapsed);
+  } else {
+    timeRow.style.display = 'none';
+  }
+
+  saveHistory({
+    version: 'v2',
+    unit: state.unit,
+    quad: state.quad,
+    timerEnabled: state.timerEnabled,
+    modeLabel: '單位：' + unitLabel + '・' + cfg.label + '・' + timerLabel,
+    total: total,
+    correct: state.correct,
+    rate: rate,
+    timeMs: state.timerEnabled ? Math.floor(elapsed) : null,
+    timeText: state.timerEnabled ? formatTime(elapsed) : null,
+    at: Date.now()
+  });
+
+  showView('view-summary');
+}
+
+function renderAnswersGrid(layout) {
+  const grid = document.getElementById('answers-grid');
+  grid.innerHTML = '';
+  const cols = layout.cols;
+  const items = layout.items;
+  const rows = Math.ceil(items.length / cols);
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+  items.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    if (key === null) {
+      btn.classList.add('placeholder');
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = ANS[key].html;
+      btn.dataset.key = key;
+      if (key === 'UNDEFINED') btn.classList.add('text-small');
+      btn.addEventListener('click', () => onAnswer(key, btn));
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function renderQuestion() {
+  const q = state.questions[state.index];
+  if (!q) return;
+  const angleHtml = (q.unit === 'rad') ? renderRadHtml(q.angleRad) : (q.angleDeg + '°');
+  document.getElementById('question-text').innerHTML =
+    `<span class="func">${q.funcDisplay}</span> <span class="angle">${angleHtml}</span><span class="equals">=</span><span class="qmark">?</span>`;
+}
+
+function updateStats() {
+  document.getElementById('stat-progress').textContent =
+    (state.index + 1) + ' / ' + state.questions.length;
+  document.getElementById('stat-correct').textContent = state.correct;
+}
+
+function onAnswer(key, btn) {
+  if (state.locked) return;
+  state.locked = true;
+
+  const q = state.questions[state.index];
+  const isCorrect = (key === q.answerKey);
+  if (isCorrect) {
+    state.correct++;
+    btn.classList.add('correct-flash');
+  } else {
+    btn.classList.add('wrong-flash');
+    const correctBtn = document.querySelector(`.answer-btn[data-key="${q.answerKey}"]`);
+    if (correctBtn) correctBtn.classList.add('correct-flash');
+  }
+
+  setTimeout(() => {
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      b.classList.remove('correct-flash', 'wrong-flash');
+    });
+    state.index++;
+    if (state.index >= state.questions.length) {
+      finishQuiz();
+    } else {
+      renderQuestion();
+      updateStats();
+      state.locked = false;
+    }
+  }, 280);
+}
+
+/* ---------- LocalStorage 歷史記錄 ---------- */
+const HISTORY_KEY = 'trig_quiz_history_v2';
+function saveHistory(record) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    list.unshift(record);
+    if (list.length > 100) list.length = 100;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('儲存歷史記錄失敗', e);
+  }
+}
+
+/* ---------- 事件綁定 ---------- */
+document.querySelectorAll('.unit-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectUnit(btn.dataset.unit, btn));
+});
+document.querySelectorAll('.quad-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectQuad(btn.dataset.quad, btn));
+});
+document.querySelectorAll('.timer-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectTimer(btn.dataset.timer, btn));
+});
+// 計時模式預設選「關」
+const defaultTimerBtn = document.querySelector('.timer-btn[data-timer="off"]');
+if (defaultTimerBtn) defaultTimerBtn.classList.add('selected');
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (!homeState.unit || !homeState.quad) return;
+  startQuiz(homeState.unit, homeState.quad, homeState.timer);
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.add('active');
+});
+document.getElementById('modal-yes').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+  abortQuiz();
+});
+document.getElementById('modal-no').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+});
+
+document.getElementById('btn-retry').addEventListener('click', () => {
+  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
+});
+document.getElementById('btn-summary-home').addEventListener('click', () => {
+  showView('view-home');
+});
+
+showView('view-home');
+</script>
+</body>
+</html>
+=> {
+  btn.addEventListener('click', () => selectTimer(btn.dataset.timer, btn));
+});
+// 計時模式預設選「關」
+const defaultTimerBtn = document.querySelector('.timer-btn[data-timer="off"]');
+if (defaultTimerBtn) defaultTimerBtn.classList.add('selected');
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (!homeState.unit || !homeState.quad) return;
+  startQuiz(homeState.unit, homeState.quad, homeState.timer);
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.add('active');
+});
+document.getElementById('modal-yes').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+  abortQuiz();
+});
+document.getElementById('modal-no').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+});
+
+document.getElementById('btn-retry').addEventListener('click', () => {
+  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
+});
+document.getElementById('btn-summary-home').addEventListener('click', () => {
+  showView('view-home');
+});
+
+showView('view-home');
+</script>
+</body>
+</html>
+(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
+});
+document.getElementById('btn-summary-home').addEventListener('click', () => {
+  showView('view-home');
+});
+
+showView('view-home');
+</script>
+</body>
+</html>
+ick', () => {
+  showView('view-home');
+});
+
+showView('view-home');
+</script>
+</body>
+</html>

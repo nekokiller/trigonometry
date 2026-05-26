@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>三角函數計時比賽 v2</title>
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#7fb9d8">
+<!-- iOS 專用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="三角函數">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
 <style>
   * {
     box-sizing: border-box;
@@ -574,8 +584,15 @@
 </div>
 
 <script>
+// 註冊 Service Worker (PWA 離線快取)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW failed:', e));
+  });
+}
+
 /* =====================================================
- * 三角函數計時比賽 v2 (含計時模式開關)
+ * 三角函數計時比賽 v2 (含計時模式開關 + PWA)
  * ===================================================== */
 
 const ANS = {
@@ -1003,6 +1020,28 @@ showView('view-home');
 </body>
 </html>
 ick', () => {
+  showView('view-home');
+});
+
+showView('view-home');
+</script>
+</body>
+</html>
+'btn-back').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.add('active');
+});
+document.getElementById('modal-yes').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+  abortQuiz();
+});
+document.getElementById('modal-no').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+});
+
+document.getElementById('btn-retry').addEventListener('click', () => {
+  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off');
+});
+document.getElementById('btn-summary-home').addEventListener('click', () => {
   showView('view-home');
 });
 

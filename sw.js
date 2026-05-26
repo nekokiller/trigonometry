@@ -3,7 +3,7 @@
  * Cache-First 策略，所有資源啟動時預先快取，網路失效時離線可用
  */
 
-const CACHE_VERSION = 'trig-quiz-v2-20260526-wrongbook';
+const CACHE_VERSION = 'trig-quiz-v2-20260526-wbfix';
 const CACHE_ASSETS = [
   './',
   './index.html',

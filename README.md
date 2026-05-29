@@ -12,7 +12,8 @@
 [![iOS](https://img.shields.io/badge/iOS-Supported-000000?logo=apple)](https://github.com/nekokiller/trigonometry)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#授權)
 
-🎮 **線上試玩**：<https://nekokiller.github.io/trigonometry/>
+🎮 **線上試玩 v2**：<https://nekokiller.github.io/trigonometry/>
+🆕 **線上試玩 v3**：<https://nekokiller.github.io/trigonometry/v3/>
 
 </div>
 

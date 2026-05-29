@@ -6,6 +6,8 @@
 
 **練習常見三角函數值的計時答題遊戲 — 可安裝 PWA、支援離線、含錯題本與音效**
 
+> 🆕 **v3** 新增於 `v3/` 子目錄：混合模式改為複選象限，每場隨機抽 15 題
+
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa)](https://github.com/nekokiller/trigonometry)
 [![iOS](https://img.shields.io/badge/iOS-Supported-000000?logo=apple)](https://github.com/nekokiller/trigonometry)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#授權)
@@ -44,7 +46,7 @@
 | 第三象限角 | 210°, 225°, 240° | 9 |
 | 第四象限角 | 300°, 315°, 330° | 9 |
 | 象限角 | 0°, 90°, 180°, 270° | 12 |
-| 混合 | 全部 17 個角度 | 51 |
+| 混合 | 複選象限（Q1–Q4 + 象限角，可複選）→ 隨機抽 15 題 | 15 |
 
 每個角度都會考 sin / cos / tan 三個函數。
 
@@ -109,7 +111,7 @@
 
 ```
 v2/
-├── index.html              # 主程式 (HTML + CSS + JS 單檔)
+├── index.html              # v2 主程式 (HTML + CSS + JS 單檔)
 ├── manifest.json           # PWA 設定檔
 ├── sw.js                   # Service Worker (離線快取)
 ├── icon-192.png            # 192×192 圖示
@@ -117,6 +119,15 @@ v2/
 ├── audio/
 │   ├── correct.mp3         # 答對音效 (47 KB)
 │   └── wrong.mp3           # 答錯音效 (16 KB)
+├── v3/                     # v3：混合複選象限
+│   ├── index.html          # v3 主程式
+│   ├── manifest.json
+│   ├── sw.js
+│   ├── icon-192.png
+│   ├── icon-512.png
+│   └── audio/
+│       ├── correct.mp3
+│       └── wrong.mp3
 └── README.md               # 本檔案
 ```
 
@@ -124,8 +135,9 @@ v2/
 
 | Key | 用途 |
 |---|---|
-| `trig_quiz_history_v2` | 比賽歷史成績（最多 100 筆） |
-| `trig_quiz_wrong_v2` | 錯題本（依 `funcName_angleDeg_unit` 為 key） |
+| `trig_quiz_history_v2` | v2 比賽歷史成績（最多 100 筆） |
+| `trig_quiz_history_v3` | v3 比賽歷史成績（最多 100 筆） |
+| `trig_quiz_wrong_v2` | 錯題本，v2 / v3 共用（依 `funcName_angleDeg_unit` 為 key） |
 
 ---
 
@@ -145,7 +157,8 @@ v2/
 | 第一象限 | 6 | 3 × 2 |
 | 第二/三/四象限 | 13 | 3 × 5（0 居中於最後一列） |
 | 象限角 | 4 | 2 × 2 |
-| 混合 / 錯題本 | 14 | 4 × 4（0、無意義 居中於最後一列） |
+| 混合（含象限角）/ 錯題本 | 14 | 4 × 4（0、無意義 居中於最後一列） |
+| 混合（不含象限角） | 13 | 3 × 5（0 居中於最後一列） |
 
 ---
 
@@ -172,6 +185,7 @@ npx serve -p 8000
 
 | 版本 | 日期 | 內容 |
 |---|---|---|
+| **v3.0.20260529** | 2026-05-29 | **混合複選象限**：「混合」改為可複選 Q1–Q4 + 象限角，每場隨機抽 15 題；含象限角時答案自動升 14 個，否則固定 13 個 |
 | **v2.0.20260526-wrongbook** | 2026-05-26 | **錯題本（跨場累積、卡片式重答、學會自動移除）** |
 | v2.0.20260526-audio | 2026-05-26 | 加入答題正確 / 錯誤音效 |
 | v2.0.20260526-PWA | 2026-05-26 | PWA 化 + GitHub Pages 部署（manifest / SW / icons） |

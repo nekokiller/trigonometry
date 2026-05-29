@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>三角函數計時比賽 v3</title>
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#7fb9d8">
+<!-- iOS 專用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="三角函數">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, -apple-system, sans-serif;
+    background: #1a1a1a;
+    color: #1a1a1a;
+    overflow: hidden;
+  }
+
+  .app {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+    background: linear-gradient(160deg, #b8dff0 0%, #7fb9d8 50%, #5b9bc0 100%);
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+  .app::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.10) 0%, transparent 35%),
+      radial-gradient(circle at 50% 90%, rgba(255,255,255,0.08) 0%, transparent 30%);
+    pointer-events: none;
+  }
+
+  .view {
+    display: none;
+    position: absolute;
+    inset: 0;
+    padding: 18px 18px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    padding-top: max(18px, env(safe-area-inset-top, 18px));
+    flex-direction: column;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .view.active {
+    display: flex;
+  }
+
+  /* ===== 首頁 ===== */
+  #view-home {
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: auto;  /* 混合展開時允許捲動 */
+  }
+
+  .home-title {
+    font-size: 30px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 3px;
+    -webkit-text-stroke: 3px #1a3a52;
+    paint-order: stroke fill;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    text-align: center;
+    line-height: 1.2;
+    margin: 4px 0 12px;
+    flex-shrink: 0;
+  }
+
+  .home-section {
+    width: 100%;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .home-section h2 {
+    font-size: 13px;
+    color: #fff;
+    margin-bottom: 5px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  .unit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quad-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .opt-btn {
+    padding: 10px 8px;
+    border: 3px solid #1a1a1a;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a3a52;
+    background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    letter-spacing: 1px;
+  }
+  .opt-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .opt-btn.selected {
+    color: #fff;
+    background: linear-gradient(180deg, #f08c40 0%, #c96819 100%);
+  }
+  .opt-btn.unit-btn.selected {
+    background: linear-gradient(180deg, #3aa8cb 0%, #1d7da0 100%);
+  }
+  .opt-btn.timer-btn.selected {
+    background: linear-gradient(180deg, #66c266 0%, #2e8b2e 100%);
+  }
+
+  /* ===== 混合子選項 ===== */
+  .mix-sub {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 14px;
+  }
+  .mix-sub-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.95);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 7px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .mix-quad-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  /* 象限角獨佔整列 */
+  .mix-quad-btn-full {
+    grid-column: 1 / -1;
+  }
+
+  .start-btn {
+    margin-top: 12px;
+    width: 80%;
+    max-width: 280px;
+    padding: 12px 12px;
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    font-size: 19px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #66c266 0%, #2e8b2e 100%);
+    box-shadow: 0 4px 0 #1a1a1a;
+    letter-spacing: 2px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .start-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .start-btn[disabled] {
+    background: linear-gradient(180deg, #c8c8c8 0%, #8a8a8a 100%);
+    color: #f0f0f0;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: 0 3px 0 #555;
+  }
+  .start-btn[disabled]:active {
+    transform: none;
+    box-shadow: 0 3px 0 #555;
+  }
+
+  /* 版本資訊（首頁底部，正常流排列） */
+  .version-info {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  /* ===== 計時答題頁面 ===== */
+  #view-quiz {
+    padding: 14px 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    padding-top: max(14px, env(safe-area-inset-top, 14px));
+    gap: 10px;
+  }
+
+  .quiz-stats {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255,255,255,0.85);
+    border: 2px solid #1a1a1a;
+    border-radius: 14px;
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a3a52;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #555;
+    font-weight: 600;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 900;
+    color: #1a3a52;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.timer {
+    color: #c93535;
+  }
+
+  .question-area {
+    flex: 0 0 auto;
+    background: rgba(255,255,255,0.92);
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: 0 4px 0 #1a1a1a;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .question-text {
+    font-size: 38px;
+    font-weight: 900;
+    color: #1a3a52;
+    letter-spacing: 2px;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .question-text .func { color: #c93535; }
+  .question-text .angle { color: #1a3a52; display: inline-flex; align-items: center; }
+  .question-text .equals { color: #1a3a52; }
+  .question-text .qmark { color: #1d7da0; }
+
+  .answers-grid {
+    flex: 1 1 auto;
+    display: grid;
+    gap: 8px;
+    padding: 4px 0;
+    min-height: 0;
+  }
+  .answer-btn {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 3px solid #1a1a1a;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffd96b 0%, #f5b427 100%);
+    color: #1a1a1a;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 #1a1a1a;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s;
+    padding: 4px;
+  }
+  .answer-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .answer-btn.correct-flash {
+    background: linear-gradient(180deg, #88e088 0%, #44a444 100%);
+    color: #fff;
+  }
+  .answer-btn.wrong-flash {
+    background: linear-gradient(180deg, #ff7070 0%, #c93535 100%);
+    color: #fff;
+  }
+  .answer-btn.text-small {
+    font-size: 15px;
+  }
+  .answer-btn.placeholder {
+    visibility: hidden;
+  }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    font-size: 18px;
+    vertical-align: middle;
+  }
+  .frac .num,
+  .frac .den {
+    padding: 0 4px;
+  }
+  .frac .num {
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 2px;
+  }
+  .frac .den {
+    padding-top: 2px;
+  }
+  .question-text .frac { font-size: 30px; }
+  .question-text .frac .num { border-bottom-width: 3px; }
+
+  .quiz-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 2px;
+  }
+  .back-btn {
+    padding: 10px 28px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ff6b6b 0%, #c93535 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .back-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+
+  /* ===== 總結 ===== */
+  #view-summary {
+    justify-content: center;
+    align-items: center;
+    padding: 30px 24px;
+  }
+  .summary-card {
+    width: 100%;
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #1a1a1a;
+    border-radius: 22px;
+    padding: 30px 24px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+  }
+  .summary-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #1a3a52;
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+  .summary-subtitle {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 22px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #f5f5f5;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+  }
+  .summary-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+  }
+  .summary-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: #1a3a52;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .summary-buttons button {
+    flex: 1;
+    padding: 14px 8px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a1a1a;
+  }
+  .summary-buttons button:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .btn-retry { background: linear-gradient(180deg, #3aa8cb 0%, #1d7da0 100%); }
+  .btn-home { background: linear-gradient(180deg, #888 0%, #555 100%); }
+
+  /* 確認對話框 */
+  .modal-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: #fff;
+    border: 3px solid #1a1a1a;
+    border-radius: 18px;
+    padding: 24px 20px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+    width: 100%;
+    max-width: 320px;
+  }
+  .modal-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a3a52;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .modal-buttons { display: flex; gap: 10px; }
+  .modal-buttons button {
+    flex: 1;
+    padding: 10px 8px;
+    border: 2px solid #1a1a1a;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn-confirm { background: linear-gradient(180deg, #ff6b6b 0%, #c93535 100%); }
+  .btn-cancel { background: linear-gradient(180deg, #aaa 0%, #666 100%); }
+
+  /* ===== 錯題本 ===== */
+  .wrongbook-btn {
+    margin-top: 8px;
+    width: 80%;
+    max-width: 280px;
+    padding: 10px 12px;
+    border: 3px solid #1a1a1a;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #b85cb8 0%, #7a2e7a 100%);
+    box-shadow: 0 3px 0 #1a1a1a;
+    letter-spacing: 1px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .wrongbook-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a1a1a;
+  }
+  .wrongbook-btn[disabled] {
+    background: linear-gradient(180deg, #c8c8c8 0%, #8a8a8a 100%);
+    color: #f0f0f0;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: 0 3px 0 #555;
+  }
+  .wrongbook-btn .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: #fff;
+    color: #7a2e7a;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .stat-value.wrong-prev { color: #c93535; font-size: 16px; }
+  .stat-value.correct-ans { color: #2e8b2e; font-size: 16px; }
+
+  /* 錯題本完成總結 */
+  .wb-empty {
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #1a1a1a;
+    border-radius: 22px;
+    padding: 36px 24px;
+    box-shadow: 0 6px 0 #1a1a1a;
+    text-align: center;
+  }
+  .wb-empty h2 {
+    font-size: 26px;
+    color: #1a3a52;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .wb-empty p {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+
+  /* 小型裝置 */
+  @media (max-height: 800px) {
+    .home-title { font-size: 24px; margin: 2px 0 10px; }
+    .home-section { margin-bottom: 8px; }
+    .home-section h2 { font-size: 12px; margin-bottom: 4px; }
+    .opt-btn { padding: 9px 6px; font-size: 14px; }
+    .start-btn { padding: 10px 12px; font-size: 17px; margin-top: 10px; }
+    .wrongbook-btn { padding: 8px 12px; font-size: 13px; margin-top: 6px; }
+    .question-text { font-size: 32px; }
+    .answer-btn { font-size: 19px; }
+    .frac { font-size: 16px; }
+    .mix-sub { padding: 8px 10px; }
+    .mix-sub-label { font-size: 11px; margin-bottom: 5px; }
+  }
+  @media (max-height: 680px) {
+    .home-title { font-size: 22px; margin: 0 0 8px; letter-spacing: 2px; }
+    .home-section { margin-bottom: 6px; }
+    .opt-btn { padding: 7px 6px; font-size: 13px; }
+    .start-btn { padding: 9px 10px; font-size: 16px; margin-top: 8px; }
+    .wrongbook-btn { padding: 7px 10px; font-size: 12px; margin-top: 5px; }
+    .mix-sub { padding: 6px 8px; margin-top: 6px; }
+    .mix-sub-label { font-size: 10px; margin-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 首頁 ===== -->
+  <div id="view-home" class="view active">
+    <h1 class="home-title">三角函數<br>計時比賽</h1>
+
+    <div class="home-section">
+      <h2>單位</h2>
+      <div class="unit-grid">
+        <button class="opt-btn unit-btn" data-unit="deg">單位：度</button>
+        <button class="opt-btn unit-btn" data-unit="rad">單位：弧度</button>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <h2>象限</h2>
+      <div class="quad-grid">
+        <button class="opt-btn quad-btn" data-quad="q1">第一象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q2">第二象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q3">第三象限角</button>
+        <button class="opt-btn quad-btn" data-quad="q4">第四象限角</button>
+        <button class="opt-btn quad-btn" data-quad="axis">象限角</button>
+        <button class="opt-btn quad-btn" data-quad="mix">混合 ▾</button>
+      </div>
+
+      <!-- 混合子選項：選了「混合」才顯示 -->
+      <div id="mix-sub" class="mix-sub" style="display:none;">
+        <p class="mix-sub-label">選擇要混合的象限（可複選，隨機抽 15 題）</p>
+        <div class="mix-quad-grid">
+          <button class="opt-btn mix-quad-btn" data-mq="q1">第一象限角</button>
+          <button class="opt-btn mix-quad-btn" data-mq="q2">第二象限角</button>
+          <button class="opt-btn mix-quad-btn" data-mq="q3">第三象限角</button>
+          <button class="opt-btn mix-quad-btn" data-mq="q4">第四象限角</button>
+          <button class="opt-btn mix-quad-btn mix-quad-btn-full" data-mq="axis">象限角</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <h2>計時模式</h2>
+      <div class="unit-grid">
+        <button class="opt-btn timer-btn" data-timer="off">計時：關</button>
+        <button class="opt-btn timer-btn" data-timer="on">計時：開</button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="btn-start" disabled>開始</button>
+    <button class="wrongbook-btn" id="btn-wrongbook">📚 錯題本 <span class="badge" id="wb-badge">0</span></button>
+
+    <div class="version-info">v3.0.20260529</div>
+  </div>
+
+  <!-- ===== 計時答題 ===== -->
+  <div id="view-quiz" class="view">
+    <div class="quiz-stats">
+      <div class="stat-item">
+        <span class="stat-label">問題數</span>
+        <span class="stat-value" id="stat-progress">0 / 0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">正確答案</span>
+        <span class="stat-value" id="stat-correct">0</span>
+      </div>
+      <div class="stat-item" id="stat-timer-wrap">
+        <span class="stat-label">經過時間</span>
+        <span class="stat-value timer" id="stat-timer">00:00.00</span>
+      </div>
+    </div>
+
+    <div class="question-area">
+      <div class="question-text" id="question-text">—</div>
+    </div>
+
+    <div class="answers-grid" id="answers-grid"></div>
+
+    <div class="quiz-footer">
+      <button class="back-btn" id="btn-back">返回首頁</button>
+    </div>
+  </div>
+
+  <!-- ===== 總結 ===== -->
+  <div id="view-summary" class="view">
+    <div class="summary-card">
+      <div class="summary-title">比賽完成！</div>
+      <div class="summary-subtitle" id="summary-mode">—</div>
+      <div class="summary-row">
+        <span class="summary-label">總題數</span>
+        <span class="summary-value" id="summary-total">0</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">答對數</span>
+        <span class="summary-value" id="summary-correct">0</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">答對率</span>
+        <span class="summary-value" id="summary-rate">0%</span>
+      </div>
+      <div class="summary-row" id="summary-time-row">
+        <span class="summary-label">總時間</span>
+        <span class="summary-value" id="summary-time">00:00.00</span>
+      </div>
+      <div class="summary-buttons">
+        <button class="btn-retry" id="btn-retry">再來一次</button>
+        <button class="btn-home" id="btn-summary-home">回首頁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 錯題本 ===== -->
+  <div id="view-wrongbook" class="view">
+    <div class="quiz-stats">
+      <div class="stat-item">
+        <span class="stat-label">錯題</span>
+        <span class="stat-value" id="wb-progress">0 / 0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">上次答案</span>
+        <span class="stat-value wrong-prev" id="wb-prev">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">正解</span>
+        <span class="stat-value correct-ans" id="wb-correct">—</span>
+      </div>
+    </div>
+
+    <div class="question-area">
+      <div class="question-text" id="wb-question">—</div>
+    </div>
+
+    <div class="answers-grid" id="wb-answers"></div>
+
+    <div class="quiz-footer">
+      <button class="back-btn" id="wb-back">返回首頁</button>
+    </div>
+  </div>
+
+  <!-- ===== 錯題本完成 ===== -->
+  <div id="view-wb-done" class="view">
+    <div class="wb-empty">
+      <h2 id="wb-done-title">太棒了！</h2>
+      <p id="wb-done-msg">—</p>
+      <div class="summary-buttons" style="margin-top: 24px;">
+        <button class="btn-retry" id="wb-done-retry">再練剩下的</button>
+        <button class="btn-home" id="wb-done-home">回首頁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認對話框 -->
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal-box">
+      <p class="modal-text">確定要停止比賽並返回首頁嗎？<br>目前進度將不會保存。</p>
+      <div class="modal-buttons">
+        <button class="btn-confirm" id="modal-yes">確定返回</button>
+        <button class="btn-cancel" id="modal-no">繼續比賽</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 註冊 Service Worker (PWA 離線快取)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW failed:', e));
+  });
+}
+
+/* =====================================================
+ * 三角函數計時比賽 v3
+ * 新增：混合模式 → 複選象限 → 隨機抽 15 題
+ * ===================================================== */
+
+/* ---------- 音效預載 ---------- */
+const sndCorrect = new Audio('./audio/correct.mp3');
+const sndWrong   = new Audio('./audio/wrong.mp3');
+sndCorrect.volume = 0.7;
+sndWrong.volume   = 0.7;
+function playSound(audio) {
+  try { audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
+}
+
+/* ---------- 答案定義 ---------- */
+const ANS = {
+  ZERO:          { key: 'ZERO',          html: '0' },
+  ONE:           { key: 'ONE',           html: '1' },
+  NEG_ONE:       { key: 'NEG_ONE',       html: '-1' },
+  HALF:          { key: 'HALF',          html: '<span class="frac"><span class="num">1</span><span class="den">2</span></span>' },
+  NEG_HALF:      { key: 'NEG_HALF',      html: '<span class="frac"><span class="num">-1</span><span class="den">2</span></span>' },
+  SQRT2_2:       { key: 'SQRT2_2',       html: '<span class="frac"><span class="num">√2</span><span class="den">2</span></span>' },
+  NEG_SQRT2_2:   { key: 'NEG_SQRT2_2',   html: '<span class="frac"><span class="num">-√2</span><span class="den">2</span></span>' },
+  SQRT3_2:       { key: 'SQRT3_2',       html: '<span class="frac"><span class="num">√3</span><span class="den">2</span></span>' },
+  NEG_SQRT3_2:   { key: 'NEG_SQRT3_2',   html: '<span class="frac"><span class="num">-√3</span><span class="den">2</span></span>' },
+  SQRT3:         { key: 'SQRT3',         html: '√3' },
+  NEG_SQRT3:     { key: 'NEG_SQRT3',     html: '-√3' },
+  ONE_SQRT3:     { key: 'ONE_SQRT3',     html: '<span class="frac"><span class="num">1</span><span class="den">√3</span></span>' },
+  NEG_ONE_SQRT3: { key: 'NEG_ONE_SQRT3', html: '<span class="frac"><span class="num">-1</span><span class="den">√3</span></span>' },
+  UNDEFINED:     { key: 'UNDEFINED',     html: '無意義' }
+};
+
+/* ---------- 角度資料表 ---------- */
+const ANGLE_TABLE = {
+  0:   { rad: '0',     sin: 'ZERO',        cos: 'ONE',         tan: 'ZERO' },
+  30:  { rad: 'π/6',   sin: 'HALF',        cos: 'SQRT3_2',     tan: 'ONE_SQRT3' },
+  45:  { rad: 'π/4',   sin: 'SQRT2_2',     cos: 'SQRT2_2',     tan: 'ONE' },
+  60:  { rad: 'π/3',   sin: 'SQRT3_2',     cos: 'HALF',        tan: 'SQRT3' },
+  90:  { rad: 'π/2',   sin: 'ONE',         cos: 'ZERO',        tan: 'UNDEFINED' },
+  120: { rad: '2π/3',  sin: 'SQRT3_2',     cos: 'NEG_HALF',    tan: 'NEG_SQRT3' },
+  135: { rad: '3π/4',  sin: 'SQRT2_2',     cos: 'NEG_SQRT2_2', tan: 'NEG_ONE' },
+  150: { rad: '5π/6',  sin: 'HALF',        cos: 'NEG_SQRT3_2', tan: 'NEG_ONE_SQRT3' },
+  180: { rad: 'π',     sin: 'ZERO',        cos: 'NEG_ONE',     tan: 'ZERO' },
+  210: { rad: '7π/6',  sin: 'NEG_HALF',    cos: 'NEG_SQRT3_2', tan: 'ONE_SQRT3' },
+  225: { rad: '5π/4',  sin: 'NEG_SQRT2_2', cos: 'NEG_SQRT2_2', tan: 'ONE' },
+  240: { rad: '4π/3',  sin: 'NEG_SQRT3_2', cos: 'NEG_HALF',    tan: 'SQRT3' },
+  270: { rad: '3π/2',  sin: 'NEG_ONE',     cos: 'ZERO',        tan: 'UNDEFINED' },
+  300: { rad: '5π/3',  sin: 'NEG_SQRT3_2', cos: 'HALF',        tan: 'NEG_SQRT3' },
+  315: { rad: '7π/4',  sin: 'NEG_SQRT2_2', cos: 'SQRT2_2',     tan: 'NEG_ONE' },
+  330: { rad: '11π/6', sin: 'NEG_HALF',    cos: 'SQRT3_2',     tan: 'NEG_ONE_SQRT3' },
+  360: { rad: '2π',    sin: 'ZERO',        cos: 'ONE',         tan: 'ZERO' }
+};
+
+const FUNCS = [
+  { name: 'sin', display: 'sin' },
+  { name: 'cos', display: 'cos' },
+  { name: 'tan', display: 'tan' }
+];
+
+/* ---------- 答案網格佈局 ---------- */
+const QUAD_LAYOUTS = {
+  q1: {
+    cols: 3,
+    items: [
+      'HALF',      'SQRT2_2',   'SQRT3_2',
+      'ONE_SQRT3', 'SQRT3',     'ONE'
+    ]
+  },
+  qOther: {
+    // 13 個選項（不含無意義）
+    cols: 3,
+    items: [
+      'HALF',          'SQRT2_2',     'SQRT3_2',
+      'NEG_HALF',      'NEG_SQRT2_2', 'NEG_SQRT3_2',
+      'ONE_SQRT3',     'SQRT3',       'ONE',
+      'NEG_ONE_SQRT3', 'NEG_SQRT3',   'NEG_ONE',
+      null,            'ZERO',        null
+    ]
+  },
+  axis: {
+    cols: 2,
+    items: ['ZERO', 'ONE', 'NEG_ONE', 'UNDEFINED']
+  },
+  mix: {
+    // 14 個選項（含無意義，當混合選了象限角時使用）
+    cols: 4,
+    items: [
+      'ONE',     'NEG_ONE',     'SQRT3',     'NEG_SQRT3',
+      'SQRT3_2', 'NEG_SQRT3_2', 'SQRT2_2',   'NEG_SQRT2_2',
+      'HALF',    'NEG_HALF',    'ONE_SQRT3', 'NEG_ONE_SQRT3',
+      null,      'ZERO',        'UNDEFINED', null
+    ]
+  }
+};
+
+/* ---------- 象限定義 ---------- */
+const QUADRANTS = {
+  q1:   { label: '第一象限角', angles: [30, 45, 60],                             layout: QUAD_LAYOUTS.q1 },
+  q2:   { label: '第二象限角', angles: [120, 135, 150],                          layout: QUAD_LAYOUTS.qOther },
+  q3:   { label: '第三象限角', angles: [210, 225, 240],                          layout: QUAD_LAYOUTS.qOther },
+  q4:   { label: '第四象限角', angles: [300, 315, 330],                          layout: QUAD_LAYOUTS.qOther },
+  axis: { label: '象限角',     angles: [0, 90, 180, 270],                        layout: QUAD_LAYOUTS.axis },
+  mix:  { label: '混合',       angles: [0,30,45,60,90,120,135,150,180,210,225,240,270,300,315,330,360], layout: QUAD_LAYOUTS.mix }
+};
+
+/* ---------- 工具函式 ---------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** 一般象限模式：生成所有題目並洗牌 */
+function buildQuestions(unit, quad) {
+  const config = QUADRANTS[quad];
+  const list = [];
+  for (const deg of config.angles) {
+    const ad = ANGLE_TABLE[deg];
+    for (const f of FUNCS) {
+      list.push({ funcName: f.name, funcDisplay: f.display, angleDeg: deg, angleRad: ad.rad, unit, answerKey: ad[f.name] });
+    }
+  }
+  return shuffle(list);
+}
+
+/**
+ * 混合模式：從複選的象限中收集所有題目，洗牌後取前 15 題
+ * @param {string}   unit      'deg' | 'rad'
+ * @param {string[]} mixQuads  e.g. ['q1', 'q3', 'axis']
+ */
+function buildMixQuestions(unit, mixQuads) {
+  const degSet = new Set();
+  for (const q of mixQuads) {
+    for (const deg of QUADRANTS[q].angles) {
+      degSet.add(deg);
+    }
+  }
+  const list = [];
+  for (const deg of degSet) {
+    const ad = ANGLE_TABLE[deg];
+    for (const f of FUNCS) {
+      list.push({ funcName: f.name, funcDisplay: f.display, angleDeg: deg, angleRad: ad.rad, unit, answerKey: ad[f.name] });
+    }
+  }
+  return shuffle(list).slice(0, 15);
+}
+
+/**
+ * 混合模式答案佈局：含象限角 → 14 個（含無意義），否則 → 13 個
+ * @param {string[]} mixQuads
+ */
+function getMixLayout(mixQuads) {
+  return mixQuads.includes('axis') ? QUAD_LAYOUTS.mix : QUAD_LAYOUTS.qOther;
+}
+
+function renderRadHtml(rad) {
+  if (rad === '0') return '0';
+  if (rad.indexOf('/') === -1) return rad;
+  const [num, den] = rad.split('/');
+  return `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+}
+
+function formatTime(ms) {
+  const totalCs = Math.floor(ms / 10);
+  const cs = totalCs % 100;
+  const totalSec = Math.floor(totalCs / 100);
+  const sec = totalSec % 60;
+  const min = Math.floor(totalSec / 60);
+  return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------- 首頁狀態 ---------- */
+const homeState = {
+  unit: null,
+  quad: null,
+  timer: 'off',
+  mixQuads: new Set()   // 混合模式複選的象限
+};
+
+function refreshStartButton() {
+  const btn = document.getElementById('btn-start');
+  // 混合模式需至少勾一個象限
+  const mixOk = homeState.quad !== 'mix' || homeState.mixQuads.size > 0;
+  btn.disabled = !(homeState.unit && homeState.quad && mixOk);
+}
+
+function selectUnit(unit, btn) {
+  homeState.unit = unit;
+  document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  refreshStartButton();
+}
+
+function selectQuad(quad, btn) {
+  homeState.quad = quad;
+  document.querySelectorAll('.quad-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  // 展開或收起混合子選項
+  const mixSub = document.getElementById('mix-sub');
+  if (quad === 'mix') {
+    mixSub.style.display = '';
+  } else {
+    mixSub.style.display = 'none';
+    // 切離混合模式時清除複選狀態
+    homeState.mixQuads.clear();
+    document.querySelectorAll('.mix-quad-btn').forEach(b => b.classList.remove('selected'));
+  }
+
+  refreshStartButton();
+}
+
+function toggleMixQuad(mq, btn) {
+  if (homeState.mixQuads.has(mq)) {
+    homeState.mixQuads.delete(mq);
+    btn.classList.remove('selected');
+  } else {
+    homeState.mixQuads.add(mq);
+    btn.classList.add('selected');
+  }
+  refreshStartButton();
+}
+
+function selectTimer(timer, btn) {
+  homeState.timer = timer;
+  document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+/* ---------- 遊戲狀態 ---------- */
+const state = {
+  unit: null,
+  quad: null,
+  mixQuads: null,       // Array | null；混合模式時存放已選象限
+  timerEnabled: false,
+  questions: [],
+  index: 0,
+  correct: 0,
+  startMs: 0,
+  timerId: null,
+  locked: false
+};
+
+/**
+ * @param {string}        unit
+ * @param {string}        quad
+ * @param {string}        timer  'on' | 'off'
+ * @param {string[]|null} mixQuads  混合模式傳入，其他傳 null
+ */
+function startQuiz(unit, quad, timer, mixQuads) {
+  state.unit = unit;
+  state.quad = quad;
+  state.mixQuads = mixQuads || null;
+  state.timerEnabled = (timer === 'on');
+  state.index = 0;
+  state.correct = 0;
+  state.locked = false;
+  state.startMs = 0;
+
+  let layout;
+  if (quad === 'mix' && mixQuads && mixQuads.length > 0) {
+    state.questions = buildMixQuestions(unit, mixQuads);
+    layout = getMixLayout(mixQuads);
+  } else {
+    state.questions = buildQuestions(unit, quad);
+    layout = QUADRANTS[quad].layout;
+  }
+
+  renderAnswersGrid(layout);
+  renderQuestion();
+  updateStats();
+  showView('view-quiz');
+
+  document.getElementById('stat-timer-wrap').style.display =
+    state.timerEnabled ? '' : 'none';
+
+  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+  if (state.timerEnabled) {
+    state.startMs = performance.now();
+    document.getElementById('stat-timer').textContent = '00:00.00';
+    state.timerId = setInterval(() => {
+      document.getElementById('stat-timer').textContent =
+        formatTime(performance.now() - state.startMs);
+    }, 30);
+  }
+}
+
+function abortQuiz() {
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = null;
+  showView('view-home');
+}
+
+function finishQuiz() {
+  const elapsed = state.timerEnabled ? (performance.now() - state.startMs) : 0;
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = null;
+
+  const total = state.questions.length;
+  const rate = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+  const unitLabel   = state.unit === 'deg' ? '度' : '弧度';
+  const timerLabel  = state.timerEnabled ? '計時' : '不計時';
+
+  // 混合模式顯示所選象限名稱
+  let modeDesc;
+  if (state.quad === 'mix' && state.mixQuads) {
+    modeDesc = '混合（' + state.mixQuads.map(q => QUADRANTS[q].label).join('、') + '）';
+  } else {
+    modeDesc = QUADRANTS[state.quad].label;
+  }
+
+  document.getElementById('summary-mode').textContent =
+    '單位：' + unitLabel + ' ・ ' + modeDesc + ' ・ ' + timerLabel + ' ・ 共 ' + total + ' 題';
+  document.getElementById('summary-total').textContent = total;
+  document.getElementById('summary-correct').textContent = state.correct;
+  document.getElementById('summary-rate').textContent = rate + '%';
+
+  const timeRow = document.getElementById('summary-time-row');
+  if (state.timerEnabled) {
+    timeRow.style.display = '';
+    document.getElementById('summary-time').textContent = formatTime(elapsed);
+  } else {
+    timeRow.style.display = 'none';
+  }
+
+  saveHistory({
+    version: 'v3',
+    unit: state.unit,
+    quad: state.quad,
+    mixQuads: state.mixQuads,
+    timerEnabled: state.timerEnabled,
+    modeLabel: '單位：' + unitLabel + '・' + modeDesc + '・' + timerLabel,
+    total,
+    correct: state.correct,
+    rate,
+    timeMs:   state.timerEnabled ? Math.floor(elapsed) : null,
+    timeText: state.timerEnabled ? formatTime(elapsed) : null,
+    at: Date.now()
+  });
+
+  showView('view-summary');
+}
+
+function renderAnswersGrid(layout) {
+  const grid = document.getElementById('answers-grid');
+  grid.innerHTML = '';
+  const { cols, items } = layout;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.gridTemplateRows    = `repeat(${Math.ceil(items.length / cols)}, 1fr)`;
+
+  items.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    if (key === null) {
+      btn.classList.add('placeholder');
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = ANS[key].html;
+      btn.dataset.key = key;
+      if (key === 'UNDEFINED') btn.classList.add('text-small');
+      btn.addEventListener('click', () => onAnswer(key, btn));
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function renderQuestion() {
+  const q = state.questions[state.index];
+  if (!q) return;
+  const angleHtml = (q.unit === 'rad') ? renderRadHtml(q.angleRad) : (q.angleDeg + '°');
+  document.getElementById('question-text').innerHTML =
+    `<span class="func">${q.funcDisplay}</span> <span class="angle">${angleHtml}</span><span class="equals">=</span><span class="qmark">?</span>`;
+}
+
+function updateStats() {
+  document.getElementById('stat-progress').textContent =
+    (state.index + 1) + ' / ' + state.questions.length;
+  document.getElementById('stat-correct').textContent = state.correct;
+}
+
+function onAnswer(key, btn) {
+  if (state.locked) return;
+  state.locked = true;
+
+  const q = state.questions[state.index];
+  const isCorrect = (key === q.answerKey);
+  const qKey = makeQKey(q.funcName, q.angleDeg, q.unit);
+
+  if (isCorrect) {
+    state.correct++;
+    btn.classList.add('correct-flash');
+    playSound(sndCorrect);
+    removeWrong(qKey);
+  } else {
+    btn.classList.add('wrong-flash');
+    const correctBtn = document.querySelector(`.answer-btn[data-key="${q.answerKey}"]`);
+    if (correctBtn) correctBtn.classList.add('correct-flash');
+    playSound(sndWrong);
+    addWrong(qKey, q, key);
+  }
+
+  setTimeout(() => {
+    document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('correct-flash', 'wrong-flash'));
+    state.index++;
+    if (state.index >= state.questions.length) {
+      finishQuiz();
+    } else {
+      renderQuestion();
+      updateStats();
+      state.locked = false;
+    }
+  }, 280);
+}
+
+/* ---------- LocalStorage 歷史記錄 ---------- */
+const HISTORY_KEY = 'trig_quiz_history_v3';
+function saveHistory(record) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    list.unshift(record);
+    if (list.length > 100) list.length = 100;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch (e) { console.warn('儲存歷史記錄失敗', e); }
+}
+
+/* ---------- 錯題本 (Wrong Book) ---------- */
+const WRONG_KEY = 'trig_quiz_wrong_v2';   // 與 v2 共用，跨版本累積
+function makeQKey(funcName, angleDeg, unit) { return funcName + '_' + angleDeg + '_' + unit; }
+function loadWrongBook() {
+  try { const raw = localStorage.getItem(WRONG_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch (e) { return {}; }
+}
+function saveWrongBook(book) {
+  try { localStorage.setItem(WRONG_KEY, JSON.stringify(book)); } catch (e) {}
+}
+function addWrong(qKey, q, userKey) {
+  const book = loadWrongBook();
+  const existing = book[qKey];
+  book[qKey] = {
+    funcName: q.funcName, funcDisplay: q.funcDisplay,
+    angleDeg: q.angleDeg, angleRad: q.angleRad, unit: q.unit,
+    correctKey: q.answerKey, lastWrongKey: userKey,
+    wrongCount: existing ? existing.wrongCount + 1 : 1,
+    lastWrongAt: Date.now()
+  };
+  saveWrongBook(book);
+}
+function removeWrong(qKey) {
+  const book = loadWrongBook();
+  if (book[qKey]) { delete book[qKey]; saveWrongBook(book); }
+}
+function getWrongCount() { return Object.keys(loadWrongBook()).length; }
+function refreshWrongBookBadge() {
+  const n = getWrongCount();
+  document.getElementById('wb-badge').textContent = n;
+  document.getElementById('btn-wrongbook').disabled = (n === 0);
+}
+
+/* ---------- 錯題本狀態 ---------- */
+const wbState = { list: [], index: 0, locked: false, conquered: 0 };
+
+function startWrongReview() {
+  const book = loadWrongBook();
+  const list = Object.entries(book).map(([qKey, q]) => Object.assign({ qKey }, q));
+  if (list.length === 0) return;
+  wbState.list = list;
+  wbState.index = 0;
+  wbState.locked = false;
+  wbState.conquered = 0;
+  renderWrongCard();
+  showView('view-wrongbook');
+}
+
+function renderWrongCard() {
+  const item = wbState.list[wbState.index];
+  if (!item) return;
+  document.getElementById('wb-progress').textContent = (wbState.index + 1) + ' / ' + wbState.list.length;
+  document.getElementById('wb-prev').innerHTML    = ANS[item.lastWrongKey].html;
+  document.getElementById('wb-correct').innerHTML = ANS[item.correctKey].html;
+  const angleHtml = (item.unit === 'rad') ? renderRadHtml(item.angleRad) : (item.angleDeg + '°');
+  document.getElementById('wb-question').innerHTML =
+    '<span class="func">' + item.funcDisplay + '</span> <span class="angle">' + angleHtml +
+    '</span><span class="equals">=</span><span class="qmark">?</span>';
+  renderWBAnswers();
+}
+
+function renderWBAnswers() {
+  const grid = document.getElementById('wb-answers');
+  grid.innerHTML = '';
+  const layout = QUAD_LAYOUTS.mix;  // 錯題本永遠用 14 個選項
+  grid.style.gridTemplateColumns = 'repeat(' + layout.cols + ', 1fr)';
+  grid.style.gridTemplateRows = 'repeat(' + Math.ceil(layout.items.length / layout.cols) + ', 1fr)';
+  layout.items.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    if (key === null) {
+      btn.classList.add('placeholder');
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = ANS[key].html;
+      btn.dataset.key = key;
+      if (key === 'UNDEFINED') btn.classList.add('text-small');
+      btn.addEventListener('click', () => onWrongAnswer(key, btn));
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function onWrongAnswer(key, btn) {
+  if (wbState.locked) return;
+  wbState.locked = true;
+  const item = wbState.list[wbState.index];
+  const isCorrect = (key === item.correctKey);
+  if (isCorrect) {
+    btn.classList.add('correct-flash');
+    playSound(sndCorrect);
+    removeWrong(item.qKey);
+    wbState.conquered++;
+  } else {
+    btn.classList.add('wrong-flash');
+    const cb = document.querySelector('.answer-btn[data-key="' + item.correctKey + '"]');
+    if (cb) cb.classList.add('correct-flash');
+    playSound(sndWrong);
+    addWrong(item.qKey, {
+      funcName: item.funcName, funcDisplay: item.funcDisplay,
+      angleDeg: item.angleDeg, angleRad: item.angleRad,
+      unit: item.unit, answerKey: item.correctKey
+    }, key);
+  }
+  setTimeout(() => {
+    document.querySelectorAll('#wb-answers .answer-btn').forEach(b => b.classList.remove('correct-flash', 'wrong-flash'));
+    wbState.index++;
+    if (wbState.index >= wbState.list.length) {
+      finishWrongReview();
+    } else {
+      renderWrongCard();
+      wbState.locked = false;
+    }
+  }, 280);
+}
+
+function finishWrongReview() {
+  const remain = getWrongCount();
+  const total  = wbState.list.length;
+  document.getElementById('wb-done-title').textContent =
+    wbState.conquered === total ? '🎉 全部征服！' : (remain === 0 ? '🎉 太棒了！' : '繼續加油！');
+  let msg = '本次練習 ' + total + ' 題，答對 ' + wbState.conquered + ' 題';
+  msg += remain > 0 ? '，錯題本還剩 ' + remain + ' 題' : '，錯題本已清空 ✨';
+  document.getElementById('wb-done-msg').textContent = msg;
+  document.getElementById('wb-done-retry').style.display = remain > 0 ? '' : 'none';
+  refreshWrongBookBadge();
+  showView('view-wb-done');
+}
+
+/* ---------- 事件綁定 ---------- */
+document.querySelectorAll('.unit-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectUnit(btn.dataset.unit, btn));
+});
+document.querySelectorAll('.quad-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectQuad(btn.dataset.quad, btn));
+});
+document.querySelectorAll('.mix-quad-btn').forEach(btn => {
+  btn.addEventListener('click', () => toggleMixQuad(btn.dataset.mq, btn));
+});
+document.querySelectorAll('.timer-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectTimer(btn.dataset.timer, btn));
+});
+
+// 預設計時：關
+const defaultTimerBtn = document.querySelector('.timer-btn[data-timer="off"]');
+if (defaultTimerBtn) defaultTimerBtn.classList.add('selected');
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (!homeState.unit || !homeState.quad) return;
+  const mixQuads = (homeState.quad === 'mix') ? Array.from(homeState.mixQuads) : null;
+  startQuiz(homeState.unit, homeState.quad, homeState.timer, mixQuads);
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.add('active');
+});
+document.getElementById('modal-yes').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+  abortQuiz();
+});
+document.getElementById('modal-no').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('active');
+});
+
+document.getElementById('btn-retry').addEventListener('click', () => {
+  startQuiz(state.unit, state.quad, state.timerEnabled ? 'on' : 'off', state.mixQuads);
+});
+document.getElementById('btn-summary-home').addEventListener('click', () => {
+  showView('view-home');
+});
+
+document.getElementById('btn-wrongbook').addEventListener('click', startWrongReview);
+document.getElementById('wb-back').addEventListener('click', () => {
+  refreshWrongBookBadge();
+  showView('view-home');
+});
+document.getElementById('wb-done-retry').addEventListener('click', startWrongReview);
+document.getElementById('wb-done-home').addEventListener('click', () => showView('view-home'));
+
+// 每次回首頁時更新錯題本 badge
+const _origShowView = showView;
+showView = function(id) {
+  _origShowView(id);
+  if (id === 'view-home') refreshWrongBookBadge();
+};
+
+refreshWrongBookBadge();
+showView('view-home');
+</script>
+</body>
+</html>
